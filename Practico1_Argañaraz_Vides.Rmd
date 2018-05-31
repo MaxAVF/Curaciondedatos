@@ -1,0 +1,165 @@
+
+***
+  ## Practico 1: Entregar un Rmd donde se encuentren todos los vuelos que:
+  
+- Que arribaron con un retraso de mas de dos horas.
+- Volaron hacia Houston (IAH o HOU)
+- Fueron operados por United, American o Delta.
+- Salieron en Verano (Julio, Agosto y Septiembre)
+- Arrivaron mas de dos horas tarde, pero salieron bien.
+- Salieron entre medianoche y las 6 am.
+ 
+***
+
+
+Exploraremos ahora la manipulacion basica utilizando un conjunto de datos sobre los
+vuelos en Nueva York en 2013.
+
+```{r echo=TRUE}
+library(nycflights13)
+fligths<-nycflights13::flights
+fligths
+```
+
+#nombres de las columnas
+```{r echo=TRUE}
+names(flights)
+```  
+
+#cantidad de filas y columnas
+```{r echo=TRUE}
+dim(flights)
+```  
+
+
+#resumen de los valores en cada columna del data.frame
+```{r echo=TRUE}
+summary(flights)
+```  
+
+Ahora me concentro en buscar los vuelos, que arribaron con un retraso de mas de dos horas:
+para eso busco la columna "arr_delay"
+
+```{r echo=TRUE}
+flights$arr_delay[1:100]
+length(flights$arr_delay)
+```  
+
+flights$arr_delay
+```{r echo=TRUE}
+dim(flights$arr_delay)
+x<-flights$arr_delay
+print("imprimo los primeros 10 elementos del vector x")
+x[1:20]
+demoras <- subset(x,x > 120)
+print("imprimo los primeros 10 elementos del vector y: Demoras mayores a 2 hs = 120 min")
+demoras[1:20]
+summary(demoras)
+print("Cantidad de vuelos con demoras mayores a a 2 hs = 120 min")
+length(demoras)
+hist(demoras,xlim=c(110,600),main="Demoras mayores a 120 minutos",breaks=50)
+```  
+#Ahora guardo del data.frame solo con aquellos casos con demoras mayores a 2 hs = 120 min
+
+```{r echo=TRUE}
+flights_demorados <- subset(flights,flights$arr_delay > 120)
+hist(flights_demorados$arr_delay,xlim=c(110,600),main="Demoras mayores a 120 minutos",breaks=50)
+names(flights_demorados)
+```  
+#De la misma manera podemos crear un data.frame que contenga solo los vuelos que
+#Volaron hacia Houston (IAH o HOU)
+```{r echo=TRUE}
+flights$dest[1:20]
+flights_hacia_Houston <- subset(flights,flights$dest == "IAH" | flights$dest == "HOU" )
+flights_hacia_Houston$dest[1:20]
+print("cantidad de viajes")
+length(flights$dest)
+print("cantidad de viajes con destino HOUSTON")
+length(flights_hacia_Houston$dest)
+#hist(flights_demorados$arr_delay,xlim=c(110,600),main="Demoras mayores a 120 minutos",breaks=50)
+#names(flights_demorados)
+```  
+#Fueron operados por United, American o Delta.
+```{r echo=TRUE}
+names(flights)
+flights$carrier[1:100]
+#Voy a considerar United=UA, American=AA, Delta=DL
+flights_Aerolineas_UA_AA_DL <- subset(flights,flights$carrier == "UA" | flights$carrier == "AA"| flights$carrier == "DL" )
+flights_Aerolineas_UA_AA_DL$carrier[1:100]
+print("Cantidad de vuelos operados por esas tres aerlineas en conjunto")
+length(flights_Aerolineas_UA_AA_DL$carrier)
+#names(flights_Aerolineas_UA_AA_DA)
+```  
+#Salieron en Verano (Julio, Agosto y Septiembre)
+```{r echo=TRUE}
+names(flights)
+#flights$month[100000:100100]
+flights_Verano=subset(flights,flights$month == 7 | flights$month == 8| flights$month == 9)
+print("Cantidad de vuelos en Verano")
+length(flights_Verano$month)
+print("Cantidad de vuelos en Julio")
+flights_Verano_Julio=subset(flights_Verano,flights_Verano$month == 7)
+length(flights_Verano_Julio$month)
+print("Cantidad de vuelos en Agosto")
+flights_Verano_Agosto=subset(flights_Verano,flights_Verano$month == 8)
+length(flights_Verano_Agosto$month)
+print("Cantidad de vuelos en Septiembre")
+flights_Verano_Septiembre=subset(flights_Verano,flights_Verano$month == 9)
+length(flights_Verano_Septiembre$month)
+```  
+
+
+#Arrivaron mas de dos horas tarde, pero salieron bien.
+
+```{r echo=TRUE}
+names(flights)
+flights$dep_delay[1:100]
+#El criterio que usare para decir que el vuelo salio "bien", es que el -5<dep_delay<5
+flights_LlegadaTarde_SalidaBien=subset(flights,flights$arr_delay > 120 & flights$dep_delay <5 & flights$dep_delay > -5)
+flights_LlegadaTarde_SalidaBien$arr_delay[1:100]
+flights_LlegadaTarde_SalidaBien$dep_delay[1:100]
+print("Verficamos que arr_delay y dep_delay tengan la misma cantidad de valores")
+length(flights_LlegadaTarde_SalidaBien$arr_delay)
+length(flights_LlegadaTarde_SalidaBien$dep_delay)
+#flights$month[100000:101000]
+
+```  
+
+Salieron entre medianoche y las 6 am.
+
+```{r echo=TRUE}
+#names(flights)
+tiempos_salida<-flights$dep_time
+print("En el caso de tiempos de Salida, hay que notar que los datos estan en hora:minutos, por lo tanto la equivalencia entre las 0:00 y 6:00 am, esta dada por el intervalo (0,600)")
+filter=flights$dep_time >= 0 & flights$dep_time <= 600
+filter[1:100]
+vuelos_medianoche_6am<-fligths[filter,]
+print("Cantidad de vuelos que partieron entre las 0 hs y 6 am, usando FILTER")
+length(vuelos_medianoche_6am$dep_time)
+print("Es importante notar que al usar dataset[filter], se obtiene un subconjunto del data set, donde se han eliminado los datos que no cumplen la condicion logica del filter. 
+      En cambio cuando se usa subset(dataframe), se obtiene un subconjunto del data frame, donde se eliminan los datos que no cumplan la condicion logica, y ademas se eliminan los NAN. Lo cual es sutil, pero puede resultar muy util a la hora de hacer curacion de datos.")
+summary(fligths)
+#hago un check visual
+hist(vuelos_medianoche_6am$dep_time,,xlim=c(0,600),main="Partidas entre 0 y 6 am",breaks=50)
+
+flights_partida_0to6_am <- subset(flights,flights$dep_time >= 0 & flights$dep_time <= 600)
+print("Cantidad de vuelos que partieron entre las 0 hs y 6 am, usando SUBSET")
+length(flights_partida_0to6_am$dep_time)
+#hago un check visual
+hist(flights_partida_0to6_am$dep_time,,xlim=c(0,600),main="Partidas entre 0 y 6 am",breaks=50)
+flights_partida_0to6_am$dep_time[1:100]
+```  
+
+
+COMENTARIOS FINALES:
+En este practico me restringi a responder las preguntas, usando las funciones tipicas.
+Sin embargo, en el caso de una aplicacion "REAL"", haria chequeos de consistencia en la misma base de datos. 
+
+Por ejemplo, haria el chequeos de consistencia entre:
+"dep_time"       "sched_dep_time"       "dep_delay"
+"arr_time"       "sched_arr_time"       "arr_delay"
+Si los datos son consistentes deberia satisfacerse las siguientes igualdades
+dep_time = sched_dep_time + dep_delay 
+arr_time = sched_arr_time + arr_delay
+
+

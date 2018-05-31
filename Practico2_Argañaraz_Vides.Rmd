@@ -1,0 +1,128 @@
+---
+title: "Wineskmeans"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+```{r echo=TRUE}
+datawine <- read.csv(file="Wine.csv", header=TRUE, sep=",",stringsAsFactors = FALSE, fileEncoding = "UTF-8")
+datawine
+```
+```{r}
+summary(datawine)
+#Tambien podemos explorar otro tipo de resumen, comunmente usado en pscico-metria.
+library(psych)
+describe(datawine)
+```
+
+```{r}
+#Ahora veamos de forma compacta la estructura de nuestro dataframe, y nos aseguramos que haya una correcta interpretacion de valores numericos y factores.
+#(Compactly Display the Structure of an Arbitrary R Object)
+str(datawine)
+```
+
+```{r}
+datawine$Customer_Segment<- as.factor(datawine$Customer_Segment)
+summary(datawine$Customer_Segment)
+```
+
+
+```{r}
+# En un mismo paso, extraemos la columna clasificadora (col 14), y normalizamos el data set con los z-scores, haciendo uso de la funcion scale:
+print("Calculamos el z-score para la columa Alcohol")
+x <- datawine$Alcohol[1:20]
+print((x-mean(x))/sd(x))
+print("Usamos la funcion scale para calcular el z-score para columna Alcohol")
+y<-scale(datawine$Alcohol[1:20])
+print(y)
+#Una vez que nos aseguramos que hace lo mismo, usamos la funcion scale para normalizar todas las columnas
+datawine_n <- data.frame(lapply(datawine[-14], scale))
+datawine_n
+```
+```{r}
+#Hacemos otro tipo de normalizacion para comparar despues
+normalize <- function(x) {
+return ((x-min(x))/(max(x)-min(x)))
+}
+datawine_norm <- data.frame(lapply(datawine[-14], normalize))
+datawine_norm
+```
+***
+### El algoritmo de k-means busca minimizar la siguiente suma de distancias:
+
+$$
+\text{tot.withinss}=\sum_{i=1}^{k}min_{(x_j\; \in \;Cluster_i)}(||x_j-\mu_i||^2)= \sum_i (\text{Within cluster sum of squares by cluster})
+$$
+
+***
+  A medida que uno aumenta la cantidad de clusters, la sumatoria anterior
+  
+  ({kmeans(datawine_n, k, nstart=50,iter.max = 15 )$tot.withinss), es cada vez menor. 
+  
+  Pero si uno desea encontrar el k optimo, hay que buscar el menor k y que minimize la suma anterior. Para ello podemos usar el algoritmo Elbow method, que consiste en buscar un k, donde la curva de $tot.withinss tiene un quiebre. Por lo cual, observemos las siguientes graficas, con los tres casos considerados:
+  Sin normalizacion
+  Con normalizacion z-score usando funcion "scale"
+  Con normalizacion min-max
+
+```{r}
+
+set.seed(123)
+# Compute and plot wss for k = 2 to k = 15.
+k.max <- 15
+wss <- sapply(1:k.max, 
+              function(k){kmeans(datawine[-14], k, nstart=50,iter.max = 15 )$tot.withinss})
+wss
+plot(1:k.max, wss/(wss[1]),
+     type="b", pch = 19, frame = FALSE, 
+     xlab="Nùmero de clusters K",
+     ylab="Total within-clusters sum of squares",main="Sin normalizar los datos")
+
+wss_znorm <- sapply(1:k.max, 
+              function(k){kmeans(datawine_n, k, nstart=50,iter.max = 15 )$tot.withinss})
+wss_znorm
+plot(1:k.max, wss_znorm/(wss_znorm[1]),
+     type="b", pch = 19, frame = FALSE, 
+     xlab="Nùmero de clusters K",
+     ylab="Total within-clusters sum of squares",main="Con z-norm")
+
+
+wss_minmaxnorm <- sapply(1:k.max, 
+              function(k){kmeans(datawine_norm, k, nstart=50,iter.max = 15 )$tot.withinss})
+wss_minmaxnorm
+plot(1:k.max, wss_minmaxnorm/(wss_minmaxnorm[1]),
+     type="b", pch = 19, frame = FALSE, 
+     xlab="Nùmero de clusters K",
+     ylab="Total within-clusters sum of squares",main="Con min_max_norm")
+```
+
+Por lo cual concluimos que el k optimo para este conjunto de datos, es el k=3.
+
+Comentario respecto a la normalizacion: Se puede ver, que hay diferencias en los tres casos. Incluso en los dos casos normalizados, se aprecian pequeñanas diferencias entre la normalizacion min-max y la normalizacion con z-score. Pero las diferencias no son los suficientemente grandes para confundirnos sobre cual es el k optimo.
+Sin embargo es algo a tener en futuros trabajos.
+
+```{r}
+# A continuacion aplicamos un metodo de clustering: Usamos el "kmeans"
+set.seed(20)
+Clusterwine <- kmeans(datawine_n, 3, nstart = 40)
+Clusterwine
+```
+```{r}
+plot(100,100)
+with(datawine_n, pairs(datawine[12:14], col=c(1:3)[Clusterwine$cluster]))
+```
+```{r}
+tabla <- table(Clusterwine$cluster, datawine$Customer_Segment)
+tabla <-  t(apply(tabla, 2, function(x)(x/sum(x))))
+cross <- as.data.frame.matrix(tabla)
+cross
+table(Clusterwine$cluster, datawine$Customer_Segment)
+```
+
+
+
+
+
